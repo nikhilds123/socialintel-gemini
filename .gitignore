@@ -1,0 +1,11 @@
+# local / private
+.claude/
+tools/ao-last-run.json
+.DS_Store
+# backups and review screenshots
+app.before-*.html
+app.v1-dark.html
+_review/
+# secrets: key lives in .env locally and in the GEMINI_API_KEY repo secret on deploy
+.env
+config.js

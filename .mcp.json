@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "agenticorg": {
+      "command": "npx",
+      "args": ["--yes", "agenticorg-mcp-server@5.0.0"],
+      "env": {
+        "AGENTICORG_API_KEY": "${AGENTICORG_API_KEY}",
+        "AGENTICORG_BASE_URL": "https://app.agenticorg.ai"
+      }
+    }
+  }
+}

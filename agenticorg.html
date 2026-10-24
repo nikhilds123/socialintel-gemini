@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Why AgenticOrg didn't fit Plug</title>
+<meta name="description" content="What we tried with AgenticOrg's agents, what blocked it, and why Plug uses Claude for analysis for now.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<script>
+  /* follow the theme picked on the main Plug page */
+  try{ if(localStorage.getItem("socialintel.theme.v2")==="dark") document.documentElement.setAttribute("data-theme","dark"); }catch(e){}
+</script>
+<style>
+/* Layout: one reading column on Plug's paper, numbered blockers as the spine. */
+:root{
+  --paper:#F9F8F6; --card:#FFFFFF; --sunk:#F4F3F0;
+  --line:#E7E5E1; --line-2:#D9D6D0;
+  --tx:#161412; --tx-2:#5A5856; --tx-3:#8E8B86;
+  --lime:#BBF351; --lime-ink:#1A2E05; --lime-tint:#EEF6DD;
+  --bad:#C0392F; --ok:#3E8A3A;
+  --mono:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  --disp:'Newsreader',Georgia,'Times New Roman',serif;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --paper:#141311; --card:#1D1C19; --sunk:#171613;
+  --line:#2B2925; --line-2:#3A3732;
+  --tx:#EEECE6; --tx-2:#B3AFA7; --tx-3:#7E7A73;
+  --lime-tint:#22300F; --bad:#EF7B70; --ok:#7DC97A;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--tx);font-family:var(--body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+header{border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:18px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--tx);text-decoration:none;font-weight:500;font-size:17px}
+.brand i{width:26px;height:26px;border-radius:7px;background:var(--lime);color:var(--lime-ink);display:grid;place-items:center}
+.back{color:var(--tx-2);font-size:14px;text-decoration:none}
+.back:hover{color:var(--tx)}
+main .wrap{padding-block:56px 88px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx-3)}
+h1{font-family:var(--disp);font-weight:400;font-size:clamp(34px,5.4vw,50px);line-height:1.08;letter-spacing:-.02em;margin:12px 0 18px;text-wrap:balance}
+.lede{font-size:18px;color:var(--tx-2);margin:0 0 12px;max-width:62ch}
+.meta{font-size:13px;color:var(--tx-3);margin:0}
+h2{font-family:var(--disp);font-weight:400;font-size:28px;line-height:1.2;letter-spacing:-.01em;margin:56px 0 16px;text-wrap:balance}
+p{margin:0 0 14px;max-width:65ch}
+code{font-family:var(--mono);font-size:.84em;background:var(--sunk);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+.blockers{list-style:none;margin:0;padding:0;border-top:1px solid var(--line);counter-reset:b}
+.blockers li{counter-increment:b;display:grid;grid-template-columns:44px 1fr;gap:4px 12px;padding:18px 0;border-bottom:1px solid var(--line)}
+.blockers li::before{content:counter(b,decimal-leading-zero);font-family:var(--mono);font-size:12px;color:var(--tx-3);padding-top:4px}
+.blockers b{display:block;font-weight:600;margin-bottom:2px}
+.blockers span{color:var(--tx-2);min-width:0}
+ul.plain{margin:0 0 14px;padding-left:20px;max-width:65ch;display:flex;flex-direction:column;gap:6px;color:var(--tx-2)}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;max-width:65ch}
+.checks li{display:grid;grid-template-columns:22px 1fr;gap:10px;color:var(--tx-2)}
+.checks li::before{content:"";width:16px;height:16px;margin-top:4px;border:1.5px solid var(--line-2);border-radius:4px}
+.decision{margin-top:56px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 26px}
+.decision h2{margin-top:0}
+.decision p:last-child{margin-bottom:0}
+.cta{display:inline-flex;align-items:center;gap:8px;margin-top:16px;background:var(--tx);color:var(--paper);text-decoration:none;font-weight:500;font-size:15px;padding:11px 18px;border-radius:10px}
+.cta:hover{opacity:.9}
+a:focus-visible{outline:2px solid var(--tx);outline-offset:3px;border-radius:4px}
+@media (max-width:520px){ .blockers li{grid-template-columns:32px 1fr} main .wrap{padding-block:40px 64px} .decision{padding:20px} }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <a class="brand" href="./"><i><svg width="14" height="14" viewBox="0 0 22 28" fill="currentColor" aria-hidden="true"><path d="M10.6 12V0L7 2.05v7.86L0 5.98v4.09L10.6 16v12l3.63-2.05v-7.85l6.96 3.93V17.94L10.6 12Z"/><path d="M0 22l6.96-3.93v-4.08L0 17.93V22Z"/><path d="M21.19 5.98l-6.96 3.93v4.09l6.96-3.93V5.98Z"/></svg></i>Plug</a>
+  <a class="back" href="./">Back to Plug</a>
+</div></header>
+
+<main><div class="wrap">
+  <span class="eyebrow">Labs write-up</span>
+  <h1>Why AgenticOrg didn't fit Plug</h1>
+  <p class="lede">Plug is an agent-driven marketing tool built to get you your first 1,000 users. We tried to hand its first step to AgenticOrg's agents. This is what happened.</p>
+  <p class="meta">24 October 2026</p>
+
+  <h2>What we tried</h2>
+  <p>We wanted AgenticOrg to do step one of Plug: read the product link and build the product profile that the rest of the plan depends on. Over one day we checked their API, SDK, MCP server and docs, wired a test route into the app, wrote a terminal probe, and created a custom agent in their dashboard.</p>
+  <p>The route never completed a single run.</p>
+
+  <h2>What blocked it</h2>
+  <ol class="blockers">
+    <li><span><b>Their API blocks browser calls.</b> Plug is a single web page. AgenticOrg's API refuses every browser origin; the preflight check returns "Disallowed CORS origin", even for their own app domain. The page cannot call AgenticOrg directly.</span></li>
+    <li><span><b>Their hosted MCP endpoint is for shopping, not agents.</b> The only hosted MCP endpoint, <code>/mcp</code>, uses permission scopes like <code>buyer_agent</code> and <code>payment</code>. It cannot run a marketing agent, so it cannot be attached as a connector.</span></li>
+    <li><span><b>The one working path is desktop-only.</b> The remaining route is their local MCP server running inside the Claude desktop app. It works only for the page owner, on that one machine. Real users on the web would never reach it.</span></li>
+    <li><span><b>No agent reads a website.</b> All 55 built-in agents are finance, HR, operations or SEO-metrics tools. We would still fetch the page ourselves and send the text along, so AgenticOrg adds a hop without adding ability.</span></li>
+    <li><span><b>The API key never validated.</b> The key returned "Invalid API key" on all three hosts. The hosts are separate deployments with different agent catalogues, and it is unclear which one the dashboard key belongs to.</span></li>
+    <li><span><b>The custom agent cannot call its model.</b> We built a "Marketing Intake Analyst" agent with a clean JSON prompt. Every run failed with <code>OpenAIInvalidRequestError: agent execution failed</code>. The workspace's only model ID is one OpenAI does not serve. Fixing it needs the workspace admin.</span></li>
+    <li><span><b>Governance built for back office, not a one-minute intake.</b> Agents start in shadow mode and must be promoted. A confidence floor, 88% by default, sends runs to human approval instead of returning output. Default write tools such as <code>schedule_social_post</code> got attached without asking. Every run needs a company ID.</span></li>
+    <li><span><b>Output shape is not guaranteed.</b> Agents return free-form JSON. We would still need a Claude pass to fit it into the profile format, so the Claude call we were trying to replace stays.</span></li>
+  </ol>
+
+  <h2>What we built and kept</h2>
+  <p>Everything stays in the code, switched off by default. The normal Claude path is untouched.</p>
+  <ul class="plain">
+    <li>A Labs switch on the intake screen that sends the profile step to an AgenticOrg agent, and falls back to Claude on any failure.</li>
+    <li>A terminal script that runs an agent and reports whether its output is usable.</li>
+    <li>Setup notes with the API facts and the agent prompt we used.</li>
+    <li>The custom intake agent in our AgenticOrg workspace, still in shadow mode.</li>
+  </ul>
+
+  <h2>What would unblock it</h2>
+  <p>All four are needed, and three of them sit with AgenticOrg or the workspace admin.</p>
+  <ul class="checks">
+    <li>AgenticOrg allows our site's origin, or we run a small server that holds the key and forwards calls.</li>
+    <li>A valid API key issued on the same host as the dashboard.</li>
+    <li>The workspace's model setting points at a real model, or a Gemini key is added.</li>
+    <li>The custom agent promoted to active, with the confidence floor off and no default tools.</li>
+  </ul>
+
+  <section class="decision">
+    <h2>Decision</h2>
+    <p>Plug keeps Claude and Firecrawl for the product analysis. It already works, runs in the browser for every user, and returns the profile in about a minute. AgenticOrg stays a Labs experiment we can switch on if the four items above get resolved.</p>
+    <a class="cta" href="./">Back to Plug</a>
+  </section>
+</div></main>
+</body>
+</html>
